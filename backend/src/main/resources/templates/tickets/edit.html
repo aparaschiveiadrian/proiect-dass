@@ -1,0 +1,25 @@
+﻿<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Edit Ticket</title></head>
+<body>
+<h1>Edit Ticket</h1>
+<p>Editing ticket: <code th:text="${ticket.id}"></code></p>
+<p>Owner: <span th:text="${ticket.owner.email}"></span></p>
+<form method="post" th:action="@{'/tickets/' + ${ticket.id} + '/edit'}">
+    <label>Title <input name="title" th:value="${ticket.title}" required></label><br>
+    <label>Description <textarea name="description" th:text="${ticket.description}" required></textarea></label><br>
+    <label>Severity
+        <select name="severity">
+            <option th:each="severity : ${severities}" th:value="${severity}" th:text="${severity}" th:selected="${severity == ticket.severity}"></option>
+        </select>
+    </label><br>
+    <label>Status
+        <select name="status">
+            <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}" th:selected="${status == ticket.status}"></option>
+        </select>
+    </label><br>
+    <button type="submit">Save</button>
+</form>
+<a th:href="@{'/tickets/' + ${ticket.id}}">Back</a>
+</body>
+</html>

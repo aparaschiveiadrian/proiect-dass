@@ -1,0 +1,97 @@
+package unibuc.adrianaparaschivei.backend.controller;
+
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import unibuc.adrianaparaschivei.backend.common.ClientIp;
+import unibuc.adrianaparaschivei.backend.common.CurrentUserProvider;
+import unibuc.adrianaparaschivei.backend.dto.TicketCreateRequestDto;
+import unibuc.adrianaparaschivei.backend.dto.TicketUpdateRequestDto;
+import unibuc.adrianaparaschivei.backend.model.Ticket;
+import unibuc.adrianaparaschivei.backend.model.TicketSeverity;
+import unibuc.adrianaparaschivei.backend.model.TicketStatus;
+import unibuc.adrianaparaschivei.backend.model.User;
+import unibuc.adrianaparaschivei.backend.service.AuditService;
+import unibuc.adrianaparaschivei.backend.service.TicketService;
+
+import java.nio.file.AccessDeniedException;
+import java.util.UUID;
+
+@Controller
+public class TicketController {
+    private final TicketService ticketService;
+    private final CurrentUserProvider currentUserProvider;
+    private final AuditService auditService;
+
+    public TicketController(TicketService ticketService, CurrentUserProvider currentUserProvider, AuditService auditService) {
+        this.ticketService = ticketService;
+        this.currentUserProvider = currentUserProvider;
+        this.auditService = auditService;
+    }
+
+    @GetMapping("/tickets")
+    public String list(HttpServletRequest request, Model model) {
+        User user = currentUser(request);
+        model.addAttribute("tickets", ticketService.listOwnTickets(user));
+        model.addAttribute("user", user);
+        return "tickets/list";
+    }
+
+    @GetMapping("/tickets/search")
+    public String search(@RequestParam(defaultValue = "") String q, Model model) {
+        model.addAttribute("tickets", ticketService.search(q));
+        model.addAttribute("query", q);
+        return "tickets/list";
+    }
+
+    @GetMapping("/tickets/new")
+    public String newForm(Model model) {
+        model.addAttribute("severities", TicketSeverity.values());
+        return "tickets/new";
+    }
+
+    @PostMapping("/tickets")
+    public String create(@RequestParam String title, @RequestParam String description, @RequestParam TicketSeverity severity, HttpServletRequest request) {
+        User user = currentUser(request);
+        TicketCreateRequestDto createRequest = new TicketCreateRequestDto(title, description, severity);
+        Ticket ticket = ticketService.create(user, createRequest, request);
+        return "redirect:/tickets/" + ticket.getId();
+    }
+
+    @GetMapping("/tickets/{id}")
+    public String details(@PathVariable UUID id, HttpServletRequest request, Model model) throws AccessDeniedException {
+        User actor = currentUser(request);
+        Ticket ticket = ticketService.findViewableTicket(id, actor);
+        auditService.log(actor, "VIEW_TICKET", "ticket", ticket.getId().toString(), ClientIp.from(request));
+        model.addAttribute("ticket", ticket);
+        model.addAttribute("actor", actor);
+        return "tickets/details";
+    }
+
+    @GetMapping("/tickets/{id}/edit")
+    public String editForm(@PathVariable UUID id, HttpServletRequest request, Model model) throws AccessDeniedException {
+        User actor = currentUser(request);
+        Ticket ticket = ticketService.findEditableTicket(id, actor);
+        model.addAttribute("ticket", ticket);
+        model.addAttribute("severities", TicketSeverity.values());
+        model.addAttribute("statuses", TicketStatus.values());
+        return "tickets/edit";
+    }
+
+    @PostMapping("/tickets/{id}/edit")
+    public String edit(@PathVariable UUID id, @RequestParam String title, @RequestParam String description, @RequestParam TicketSeverity severity, @RequestParam TicketStatus status, HttpServletRequest request) throws AccessDeniedException {
+        User actor = currentUser(request);
+        Ticket ticket = ticketService.findEditableTicket(id, actor);
+        TicketUpdateRequestDto updateRequest = new TicketUpdateRequestDto(title, description, severity, status);
+        ticketService.update(ticket, updateRequest, actor, request);
+        return "redirect:/tickets/" + id;
+    }
+
+    private User currentUser(HttpServletRequest request) {
+        return currentUserProvider.from(request).orElseThrow();
+    }
+}

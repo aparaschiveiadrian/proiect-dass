@@ -1,0 +1,18 @@
+﻿<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>New Ticket</title></head>
+<body>
+<h1>Create Ticket</h1>
+<form method="post" action="/tickets">
+    <label>Title <input name="title" required></label><br>
+    <label>Description <textarea name="description" required></textarea></label><br>
+    <label>Severity
+        <select name="severity">
+            <option th:each="severity : ${severities}" th:value="${severity}" th:text="${severity}"></option>
+        </select>
+    </label><br>
+    <button type="submit">Create</button>
+</form>
+<a href="/tickets">Back</a>
+</body>
+</html>

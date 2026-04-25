@@ -1,0 +1,18 @@
+﻿<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Ticket Details</title></head>
+<body>
+<h1>Ticket Details</h1>
+<p>ID: <code th:text="${ticket.id}"></code></p>
+<p>Title: <strong th:text="${ticket.title}"></strong></p>
+<p>Description:</p>
+<pre th:text="${ticket.description}"></pre>
+<p>Severity: <span th:text="${ticket.severity}"></span></p>
+<p>Status: <span th:text="${ticket.status}"></span></p>
+<p>Owner: <span th:text="${ticket.owner.email}"></span></p>
+<p>Current actor: <span th:text="${actor.email}"></span></p>
+<a th:href="@{'/tickets/' + ${ticket.id} + '/edit'}">Edit</a> |
+<a href="/tickets">Back</a>
+<p>Vulnerable demo: if Current actor is different from Owner, IDOR was successful.</p>
+</body>
+</html>

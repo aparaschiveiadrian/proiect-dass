@@ -1,0 +1,35 @@
+﻿<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Tickets</title></head>
+<body>
+<h1>Tickets</h1>
+<nav>
+    <a href="/dashboard">Dashboard</a> |
+    <a href="/tickets/new">Create ticket</a> |
+    <a href="/logout">Logout</a>
+</nav>
+<form method="get" action="/tickets/search">
+    <label>Search <input name="q" th:value="${query}"></label>
+    <button type="submit">Search</button>
+</form>
+<table border="1" cellpadding="6">
+    <thead>
+    <tr><th>ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Owner</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="ticket : ${tickets}">
+        <td><code th:text="${ticket.id}"></code></td>
+        <td th:text="${ticket.title}"></td>
+        <td th:text="${ticket.severity}"></td>
+        <td th:text="${ticket.status}"></td>
+        <td th:text="${ticket.owner.email}"></td>
+        <td>
+            <a th:href="@{'/tickets/' + ${ticket.id}}">View</a>
+            <a th:href="@{'/tickets/' + ${ticket.id} + '/edit'}">Edit</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p>Vulnerable demo: viewing/editing by ID does not check ownership.</p>
+</body>
+</html>
