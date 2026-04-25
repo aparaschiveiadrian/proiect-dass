@@ -1,0 +1,18 @@
+﻿services:
+  adeskly-db:
+    image: postgres:16.13
+    container_name: adeskly-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: deskly
+      POSTGRES_USER: ${DATABASE_USERNAME:-admindb}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-passworddb}
+    ports:
+      - "5500:5432"
+    volumes:
+      - adeskly-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
