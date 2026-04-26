@@ -29,6 +29,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private boolean isPublicPage(String requestedPath) {
         return !requestedPath.startsWith("/dashboard")
                 && !requestedPath.startsWith("/tickets")
+                && !requestedPath.startsWith("/audit")
                 && !requestedPath.startsWith("/logout");
     }
 }

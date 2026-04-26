@@ -6,13 +6,17 @@
 <p>ID: <code th:text="${ticket.id}"></code></p>
 <p>Title: <strong th:text="${ticket.title}"></strong></p>
 <p>Description:</p>
-<pre th:text="${ticket.description}"></pre>
+<div th:utext="${ticket.description}"></div>
 <p>Severity: <span th:text="${ticket.severity}"></span></p>
 <p>Status: <span th:text="${ticket.status}"></span></p>
 <p>Owner: <span th:text="${ticket.owner.email}"></span></p>
 <p>Current actor: <span th:text="${actor.email}"></span></p>
 <a th:href="@{'/tickets/' + ${ticket.id} + '/edit'}">Edit</a> |
+<form method="post" th:action="@{'/tickets/' + ${ticket.id} + '/delete'}" style="display:inline">
+    <button type="submit">Delete</button>
+</form> |
 <a href="/tickets">Back</a>
 <p>Vulnerable demo: if Current actor is different from Owner, IDOR was successful.</p>
+<p>Vulnerable demo: description is rendered with th:utext, so stored XSS payloads can execute.</p>
 </body>
 </html>

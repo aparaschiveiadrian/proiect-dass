@@ -18,7 +18,6 @@ import unibuc.adrianaparaschivei.backend.model.User;
 import unibuc.adrianaparaschivei.backend.service.AuditService;
 import unibuc.adrianaparaschivei.backend.service.TicketService;
 
-import java.nio.file.AccessDeniedException;
 import java.util.UUID;
 
 @Controller
@@ -36,15 +35,16 @@ public class TicketController {
     @GetMapping("/tickets")
     public String list(HttpServletRequest request, Model model) {
         User user = currentUser(request);
-        model.addAttribute("tickets", ticketService.listOwnTickets(user));
+        model.addAttribute("tickets", ticketService.listVisibleTicketsVulnerable(user));
         model.addAttribute("user", user);
         return "tickets/list";
     }
 
     @GetMapping("/tickets/search")
-    public String search(@RequestParam(defaultValue = "") String q, Model model) {
-        model.addAttribute("tickets", ticketService.search(q));
+    public String search(@RequestParam(defaultValue = "") String q, HttpServletRequest request, Model model) {
+        model.addAttribute("tickets", ticketService.searchVulnerable(q));
         model.addAttribute("query", q);
+        model.addAttribute("user", currentUser(request));
         return "tickets/list";
     }
 
@@ -63,7 +63,7 @@ public class TicketController {
     }
 
     @GetMapping("/tickets/{id}")
-    public String details(@PathVariable UUID id, HttpServletRequest request, Model model) throws AccessDeniedException {
+    public String details(@PathVariable UUID id, HttpServletRequest request, Model model) {
         User actor = currentUser(request);
         Ticket ticket = ticketService.findViewableTicket(id, actor);
         auditService.log(actor, "VIEW_TICKET", "ticket", ticket.getId().toString(), ClientIp.from(request));
@@ -73,7 +73,7 @@ public class TicketController {
     }
 
     @GetMapping("/tickets/{id}/edit")
-    public String editForm(@PathVariable UUID id, HttpServletRequest request, Model model) throws AccessDeniedException {
+    public String editForm(@PathVariable UUID id, HttpServletRequest request, Model model) {
         User actor = currentUser(request);
         Ticket ticket = ticketService.findEditableTicket(id, actor);
         model.addAttribute("ticket", ticket);
@@ -83,12 +83,20 @@ public class TicketController {
     }
 
     @PostMapping("/tickets/{id}/edit")
-    public String edit(@PathVariable UUID id, @RequestParam String title, @RequestParam String description, @RequestParam TicketSeverity severity, @RequestParam TicketStatus status, HttpServletRequest request) throws AccessDeniedException {
+    public String edit(@PathVariable UUID id, @RequestParam String title, @RequestParam String description, @RequestParam TicketSeverity severity, @RequestParam TicketStatus status, HttpServletRequest request) {
         User actor = currentUser(request);
         Ticket ticket = ticketService.findEditableTicket(id, actor);
         TicketUpdateRequestDto updateRequest = new TicketUpdateRequestDto(title, description, severity, status);
         ticketService.update(ticket, updateRequest, actor, request);
         return "redirect:/tickets/" + id;
+    }
+
+    @PostMapping("/tickets/{id}/delete")
+    public String delete(@PathVariable UUID id, HttpServletRequest request) {
+        User actor = currentUser(request);
+        Ticket ticket = ticketService.findEditableTicket(id, actor);
+        ticketService.delete(ticket, actor, request);
+        return "redirect:/tickets";
     }
 
     private User currentUser(HttpServletRequest request) {

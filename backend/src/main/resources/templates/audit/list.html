@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Audit Logs</title></head>
+<body>
+<h1>Audit Logs</h1>
+<p>Logged in as: <strong th:text="${user.email}"></strong></p>
+<nav>
+    <a href="/dashboard">Dashboard</a> |
+    <a href="/tickets">Tickets</a> |
+    <a href="/logout">Logout</a>
+</nav>
+<table border="1" cellpadding="6">
+    <thead>
+    <tr>
+        <th>Timestamp</th>
+        <th>User</th>
+        <th>Action</th>
+        <th>Resource</th>
+        <th>Resource ID</th>
+        <th>IP</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="log : ${logs}">
+        <td th:text="${log.timestamp}"></td>
+        <td th:text="${log.user == null ? 'anonymous' : log.user.email}"></td>
+        <td th:text="${log.action}"></td>
+        <td th:text="${log.resource}"></td>
+        <td th:text="${log.resourceId}"></td>
+        <td th:text="${log.ipAddress}"></td>
+    </tr>
+    </tbody>
+</table>
+<p>Vulnerable demo: audit logs are visible to every authenticated user, not only managers.</p>
+</body>
+</html>

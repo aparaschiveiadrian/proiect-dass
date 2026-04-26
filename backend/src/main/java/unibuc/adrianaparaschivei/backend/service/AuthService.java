@@ -41,19 +41,20 @@ public class AuthService {
 
     @Transactional
     public AuthResultDto login(LoginRequestDto loginRequest, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        Optional<User> userOptional = userService.findByEmail(loginRequest.email());
+        Optional<User> userOptional = userService.findByEmailUnsafe(loginRequest.email());
         if (userOptional.isEmpty()) {
             auditService.log(null, "LOGIN_FAILED", "auth", loginRequest.email(), ClientIp.from(httpRequest));
             return AuthResultDto.failure("User does not exist");
         }
 
-        User user = userOptional.get();
-        String suppliedHash = VulnerablePasswordHasher.md5(loginRequest.password() == null ? "" : loginRequest.password());
-        if (!user.getPasswordHash().equals(suppliedHash)) {
-            auditService.log(user, "LOGIN_FAILED", "auth", user.getId().toString(), ClientIp.from(httpRequest));
+        Optional<User> authenticatedUser = userService.loginUnsafe(loginRequest.email(), loginRequest.password());
+        if (authenticatedUser.isEmpty()) {
+            User existingUser = userOptional.get();
+            auditService.log(existingUser, "LOGIN_FAILED", "auth", existingUser.getId().toString(), ClientIp.from(httpRequest));
             return AuthResultDto.failure("Wrong password");
         }
 
+        User user = authenticatedUser.get();
         createVulnerableAuthCookie(httpResponse, user);
         auditService.log(user, "LOGIN_SUCCESS", "auth", user.getId().toString(), ClientIp.from(httpRequest));
         return AuthResultDto.success("Login successful");

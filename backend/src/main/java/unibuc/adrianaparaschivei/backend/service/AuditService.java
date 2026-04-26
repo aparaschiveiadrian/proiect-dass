@@ -6,6 +6,8 @@ import unibuc.adrianaparaschivei.backend.model.AuditLog;
 import unibuc.adrianaparaschivei.backend.model.User;
 import unibuc.adrianaparaschivei.backend.repository.AuditLogRepository;
 
+import java.util.List;
+
 @Service
 public class AuditService {
     private final AuditLogRepository auditLogRepository;
@@ -23,5 +25,9 @@ public class AuditService {
         auditLog.setResourceId(resourceId);
         auditLog.setIpAddress(ipAddress);
         auditLogRepository.save(auditLog);
+    }
+
+    public List<AuditLog> listAllLogsVulnerable() {
+        return auditLogRepository.findAllByOrderByTimestampDesc();
     }
 }

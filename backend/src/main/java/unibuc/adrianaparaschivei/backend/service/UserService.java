@@ -6,6 +6,7 @@ import unibuc.adrianaparaschivei.backend.dto.UserRegisterRequestDto;
 import unibuc.adrianaparaschivei.backend.model.Role;
 import unibuc.adrianaparaschivei.backend.model.User;
 import unibuc.adrianaparaschivei.backend.repository.UserRepository;
+import unibuc.adrianaparaschivei.backend.repository.VulnerableUserSqlRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -13,9 +14,11 @@ import java.util.UUID;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final VulnerableUserSqlRepository vulnerableUserSqlRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, VulnerableUserSqlRepository vulnerableUserSqlRepository) {
         this.userRepository = userRepository;
+        this.vulnerableUserSqlRepository = vulnerableUserSqlRepository;
     }
 
     @Transactional
@@ -26,6 +29,15 @@ public class UserService {
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(normalizeEmail(email));
+    }
+
+    public Optional<User> findByEmailUnsafe(String email) {
+        return vulnerableUserSqlRepository.findByEmailUnsafe(normalizeEmail(email));
+    }
+
+    public Optional<User> loginUnsafe(String email, String password) {
+        String passwordHash = VulnerablePasswordHasher.md5(password == null ? "" : password);
+        return vulnerableUserSqlRepository.loginUnsafe(normalizeEmail(email), passwordHash);
     }
 
     public Optional<User> findById(UUID id) {

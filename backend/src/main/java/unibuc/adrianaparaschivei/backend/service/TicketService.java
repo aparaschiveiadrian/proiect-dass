@@ -11,8 +11,8 @@ import unibuc.adrianaparaschivei.backend.model.Ticket;
 import unibuc.adrianaparaschivei.backend.model.TicketStatus;
 import unibuc.adrianaparaschivei.backend.model.User;
 import unibuc.adrianaparaschivei.backend.repository.TicketRepository;
+import unibuc.adrianaparaschivei.backend.repository.VulnerableTicketSqlRepository;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,39 +20,35 @@ import java.util.UUID;
 @Service
 public class TicketService {
     private final TicketRepository ticketRepository;
+    private final VulnerableTicketSqlRepository vulnerableTicketSqlRepository;
     private final AuditService auditService;
 
-    public TicketService(TicketRepository ticketRepository, AuditService auditService) {
+    public TicketService(TicketRepository ticketRepository, VulnerableTicketSqlRepository vulnerableTicketSqlRepository, AuditService auditService) {
         this.ticketRepository = ticketRepository;
+        this.vulnerableTicketSqlRepository = vulnerableTicketSqlRepository;
         this.auditService = auditService;
     }
 
-    public List<Ticket> listOwnTickets(User owner) {
-        return ticketRepository.findByOwnerId(owner.getId());
+    public List<Ticket> listVisibleTicketsVulnerable(User actor) {
+        return ticketRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    public List<Ticket> search(String query) {
-        String safeQuery = query == null ? "" : query;
-        return ticketRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(safeQuery, safeQuery);
+    public List<Ticket> searchVulnerable(String query) {
+        String unsafeQuery = query == null ? "" : query;
+        return vulnerableTicketSqlRepository.searchUnsafe(unsafeQuery);
     }
 
     public Optional<Ticket> findById(UUID id) {
         return ticketRepository.findById(id);
     }
 
-    public Ticket findViewableTicket(UUID id, User currentUser) throws AccessDeniedException {
+    public Ticket findViewableTicket(UUID id, User currentUser) {
         Ticket ticket = ticketRepository.findById(id).orElseThrow();
-        if (!isOwner(ticket, currentUser)) {
-            throw new AccessDeniedException("You can only view your own tickets");
-        }
         return ticket;
     }
 
-    public Ticket findEditableTicket(UUID id, User currentUser) throws AccessDeniedException {
+    public Ticket findEditableTicket(UUID id, User currentUser) {
         Ticket ticket = ticketRepository.findById(id).orElseThrow();
-        if (!isOwner(ticket, currentUser) && !isManager(currentUser)) {
-            throw new AccessDeniedException("You can only edit your own tickets unless you are a manager");
-        }
         return ticket;
     }
 
@@ -70,6 +66,13 @@ public class TicketService {
         Ticket saved = ticketRepository.save(ticket);
         auditService.log(actor, "UPDATE_TICKET", "ticket", saved.getId().toString(), ClientIp.from(httpRequest));
         return saved;
+    }
+
+    @Transactional
+    public void delete(Ticket ticket, User actor, HttpServletRequest httpRequest) {
+        UUID ticketId = ticket.getId();
+        ticketRepository.delete(ticket);
+        auditService.log(actor, "DELETE_TICKET", "ticket", ticketId.toString(), ClientIp.from(httpRequest));
     }
 
     private Ticket mapToTicket(User owner, TicketCreateRequestDto request) {

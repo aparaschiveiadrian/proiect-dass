@@ -6,9 +6,11 @@
 <p>Logged in as: <strong th:text="${user.email}"></strong></p>
 <p>Role: <strong th:text="${user.role}"></strong></p>
 <nav>
-    <a href="/tickets">My tickets</a> |
+    <a href="/tickets">Tickets</a> |
     <a href="/tickets/new">Create ticket</a> |
+    <a href="/audit">Audit logs</a> |
     <a href="/logout">Logout</a>
 </nav>
+<p>Vulnerable demo: audit logs link is visible to every authenticated user, not only managers.</p>
 </body>
 </html>

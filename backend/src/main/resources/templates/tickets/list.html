@@ -6,6 +6,7 @@
 <nav>
     <a href="/dashboard">Dashboard</a> |
     <a href="/tickets/new">Create ticket</a> |
+    <a href="/audit">Audit logs</a> |
     <a href="/logout">Logout</a>
 </nav>
 <form method="get" action="/tickets/search">
@@ -26,10 +27,14 @@
         <td>
             <a th:href="@{'/tickets/' + ${ticket.id}}">View</a>
             <a th:href="@{'/tickets/' + ${ticket.id} + '/edit'}">Edit</a>
+            <form method="post" th:action="@{'/tickets/' + ${ticket.id} + '/delete'}" style="display:inline">
+                <button type="submit">Delete</button>
+            </form>
         </td>
     </tr>
     </tbody>
 </table>
-<p>Vulnerable demo: viewing/editing by ID does not check ownership.</p>
+<p>Vulnerable demo: all authenticated users can list, view, edit, delete and change status for all tickets.</p>
+<p>Vulnerable demo: search concatenates user input directly into SQL.</p>
 </body>
 </html>
