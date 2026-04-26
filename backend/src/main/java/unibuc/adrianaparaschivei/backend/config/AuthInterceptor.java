@@ -4,11 +4,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
-import unibuc.adrianaparaschivei.backend.common.AuthCookieNames;
-import unibuc.adrianaparaschivei.backend.common.CookieReader;
+import unibuc.adrianaparaschivei.backend.common.CurrentUserProvider;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
+    private final CurrentUserProvider currentUserProvider;
+
+    public AuthInterceptor(CurrentUserProvider currentUserProvider) {
+        this.currentUserProvider = currentUserProvider;
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String requestedPath = request.getRequestURI();
@@ -17,8 +22,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        boolean hasAuthCookie = CookieReader.findCookieValue(request, AuthCookieNames.AUTH_COOKIE).isPresent();
-        if (!hasAuthCookie) {
+        boolean hasValidAuthToken = currentUserProvider.from(request).isPresent();
+        if (!hasValidAuthToken) {
             response.sendRedirect("/login?error=Please login first");
             return false;
         }
@@ -29,6 +34,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private boolean isPublicPage(String requestedPath) {
         return !requestedPath.startsWith("/dashboard")
                 && !requestedPath.startsWith("/tickets")
+                && !requestedPath.startsWith("/audit")
                 && !requestedPath.startsWith("/logout");
     }
 }

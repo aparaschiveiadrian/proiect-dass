@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Ticket Details</title></head>
 <body>
@@ -12,7 +12,14 @@
 <p>Owner: <span th:text="${ticket.owner.email}"></span></p>
 <p>Current actor: <span th:text="${actor.email}"></span></p>
 <a th:href="@{'/tickets/' + ${ticket.id} + '/edit'}">Edit</a> |
+<form method="post" th:action="@{'/tickets/' + ${ticket.id} + '/delete'}" style="display:inline">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+    <button type="submit">Delete</button>
+</form> |
 <a href="/tickets">Back</a>
-<p>Vulnerable demo: if Current actor is different from Owner, IDOR was successful.</p>
+<p th:if="${canManageAllTickets}">Fixed demo: manager can view tickets created by any user.</p>
+<p th:unless="${canManageAllTickets}">Fixed demo: analyst can view only own tickets.</p>
 </body>
 </html>
+
+

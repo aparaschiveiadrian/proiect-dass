@@ -1,15 +1,17 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Login</title></head>
 <body>
 <h1>Login</h1>
 <p style="color:red" th:if="${error}" th:text="${error}"></p>
 <form method="post" action="/login">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
     <label>Email <input name="email" type="email" required></label><br>
     <label>Password <input name="password" type="text" required></label><br>
     <button type="submit">Login</button>
 </form>
-<p>Vulnerable demo: login errors reveal whether the user exists.</p>
+<p>Fixed demo: login errors are generic and failed attempts are limited.</p>
 <a href="/register">Register</a> | <a href="/forgot-password">Forgot password</a> | <a href="/">Home</a>
 </body>
 </html>
+

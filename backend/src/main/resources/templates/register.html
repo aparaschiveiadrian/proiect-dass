@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Register</title></head>
 <body>
@@ -6,11 +6,13 @@
 <p style="color:green" th:if="${success}" th:text="${success}"></p>
 <p style="color:red" th:if="${error}" th:text="${error}"></p>
 <form method="post" action="/register">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
     <label>Email <input name="email" type="email" required></label><br>
     <label>Password <input name="password" type="text" required></label><br>
     <button type="submit">Create account</button>
 </form>
-<p>Vulnerable demo: weak passwords like <strong>123</strong> are accepted and stored with MD5.</p>
+<p>Fixed demo: weak passwords are rejected and stored passwords use BCrypt.</p>
 <a href="/login">Login</a> | <a href="/">Home</a>
 </body>
 </html>
+

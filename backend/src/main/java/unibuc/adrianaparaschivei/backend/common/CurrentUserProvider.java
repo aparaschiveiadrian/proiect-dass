@@ -3,17 +3,16 @@ package unibuc.adrianaparaschivei.backend.common;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
 import unibuc.adrianaparaschivei.backend.model.User;
-import unibuc.adrianaparaschivei.backend.service.UserService;
+import unibuc.adrianaparaschivei.backend.service.AuthTokenService;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 public class CurrentUserProvider {
-    private final UserService userService;
+    private final AuthTokenService authTokenService;
 
-    public CurrentUserProvider(UserService userService) {
-        this.userService = userService;
+    public CurrentUserProvider(AuthTokenService authTokenService) {
+        this.authTokenService = authTokenService;
     }
 
     public Optional<User> from(HttpServletRequest request) {
@@ -22,7 +21,7 @@ public class CurrentUserProvider {
             return Optional.empty();
         }
 
-        UUID userId = UUID.fromString(cookieValue.get());
-        return userService.findById(userId);
+        String rawToken = cookieValue.get();
+        return authTokenService.findUserByRawToken(rawToken);
     }
 }

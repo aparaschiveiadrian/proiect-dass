@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Tickets</title></head>
 <body>
@@ -6,7 +6,12 @@
 <nav>
     <a href="/dashboard">Dashboard</a> |
     <a href="/tickets/new">Create ticket</a> |
-    <a href="/logout">Logout</a>
+    <a th:if="${canManageAllTickets}" href="/audit">Audit logs</a>
+    <span th:if="${canManageAllTickets}"> | </span>
+    <form method="post" action="/logout" style="display:inline">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button type="submit">Logout</button>
+    </form>
 </nav>
 <form method="get" action="/tickets/search">
     <label>Search <input name="q" th:value="${query}"></label>
@@ -26,10 +31,17 @@
         <td>
             <a th:href="@{'/tickets/' + ${ticket.id}}">View</a>
             <a th:href="@{'/tickets/' + ${ticket.id} + '/edit'}">Edit</a>
+            <form method="post" th:action="@{'/tickets/' + ${ticket.id} + '/delete'}" style="display:inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit">Delete</button>
+            </form>
         </td>
     </tr>
     </tbody>
 </table>
-<p>Vulnerable demo: viewing/editing by ID does not check ownership.</p>
+<p th:if="${canManageAllTickets}">Fixed demo: manager can view and edit all tickets.</p>
+<p th:unless="${canManageAllTickets}">Fixed demo: analyst can view and edit only own tickets.</p>
 </body>
 </html>
+
+
