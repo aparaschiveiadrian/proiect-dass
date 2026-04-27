@@ -27,9 +27,21 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean isPublicPage(String requestedPath) {
+        if (isPublicApiPage(requestedPath)) {
+            return true;
+        }
+
         return !requestedPath.startsWith("/dashboard")
                 && !requestedPath.startsWith("/tickets")
                 && !requestedPath.startsWith("/audit")
+                && !requestedPath.startsWith("/api")
                 && !requestedPath.startsWith("/logout");
+    }
+
+    private boolean isPublicApiPage(String requestedPath) {
+        return requestedPath.equals("/api/register")
+                || requestedPath.equals("/api/login")
+                || requestedPath.equals("/api/forgot-password")
+                || requestedPath.equals("/api/reset-password");
     }
 }

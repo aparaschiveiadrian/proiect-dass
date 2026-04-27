@@ -3,13 +3,19 @@ package unibuc.adrianaparaschivei.backend.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import unibuc.adrianaparaschivei.backend.common.ClientIp;
 import unibuc.adrianaparaschivei.backend.common.CurrentUserProvider;
+import unibuc.adrianaparaschivei.backend.dto.AuthResultDto;
 import unibuc.adrianaparaschivei.backend.dto.TicketCreateRequestDto;
+import unibuc.adrianaparaschivei.backend.dto.TicketResponseDto;
 import unibuc.adrianaparaschivei.backend.dto.TicketUpdateRequestDto;
 import unibuc.adrianaparaschivei.backend.model.Ticket;
 import unibuc.adrianaparaschivei.backend.model.TicketSeverity;
@@ -18,6 +24,7 @@ import unibuc.adrianaparaschivei.backend.model.User;
 import unibuc.adrianaparaschivei.backend.service.AuditService;
 import unibuc.adrianaparaschivei.backend.service.TicketService;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -40,12 +47,31 @@ public class TicketController {
         return "tickets/list";
     }
 
+    @ResponseBody
+    @GetMapping("/api/tickets")
+    public List<TicketResponseDto> apiList(HttpServletRequest request) {
+        User user = currentUser(request);
+        return ticketService.listVisibleTicketsVulnerable(user)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @GetMapping("/tickets/search")
     public String search(@RequestParam(defaultValue = "") String q, HttpServletRequest request, Model model) {
         model.addAttribute("tickets", ticketService.searchVulnerable(q));
         model.addAttribute("query", q);
         model.addAttribute("user", currentUser(request));
         return "tickets/list";
+    }
+
+    @ResponseBody
+    @GetMapping("/api/tickets/search")
+    public List<TicketResponseDto> apiSearch(@RequestParam(defaultValue = "") String q) {
+        return ticketService.searchVulnerable(q)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @GetMapping("/tickets/new")
@@ -62,6 +88,14 @@ public class TicketController {
         return "redirect:/tickets/" + ticket.getId();
     }
 
+    @ResponseBody
+    @PostMapping("/api/tickets")
+    public TicketResponseDto apiCreate(@RequestBody TicketCreateRequestDto createRequest, HttpServletRequest request) {
+        User user = currentUser(request);
+        Ticket ticket = ticketService.create(user, createRequest, request);
+        return toResponse(ticket);
+    }
+
     @GetMapping("/tickets/{id}")
     public String details(@PathVariable UUID id, HttpServletRequest request, Model model) {
         User actor = currentUser(request);
@@ -70,6 +104,15 @@ public class TicketController {
         model.addAttribute("ticket", ticket);
         model.addAttribute("actor", actor);
         return "tickets/details";
+    }
+
+    @ResponseBody
+    @GetMapping("/api/tickets/{id}")
+    public TicketResponseDto apiDetails(@PathVariable UUID id, HttpServletRequest request) {
+        User actor = currentUser(request);
+        Ticket ticket = ticketService.findViewableTicket(id, actor);
+        auditService.log(actor, "VIEW_TICKET", "ticket", ticket.getId().toString(), ClientIp.from(request));
+        return toResponse(ticket);
     }
 
     @GetMapping("/tickets/{id}/edit")
@@ -91,6 +134,15 @@ public class TicketController {
         return "redirect:/tickets/" + id;
     }
 
+    @ResponseBody
+    @PutMapping("/api/tickets/{id}")
+    public TicketResponseDto apiEdit(@PathVariable UUID id, @RequestBody TicketUpdateRequestDto updateRequest, HttpServletRequest request) {
+        User actor = currentUser(request);
+        Ticket ticket = ticketService.findEditableTicket(id, actor);
+        Ticket saved = ticketService.update(ticket, updateRequest, actor, request);
+        return toResponse(saved);
+    }
+
     @PostMapping("/tickets/{id}/delete")
     public String delete(@PathVariable UUID id, HttpServletRequest request) {
         User actor = currentUser(request);
@@ -99,7 +151,30 @@ public class TicketController {
         return "redirect:/tickets";
     }
 
+    @ResponseBody
+    @DeleteMapping("/api/tickets/{id}")
+    public AuthResultDto apiDelete(@PathVariable UUID id, HttpServletRequest request) {
+        User actor = currentUser(request);
+        Ticket ticket = ticketService.findEditableTicket(id, actor);
+        ticketService.delete(ticket, actor, request);
+        return AuthResultDto.success("Ticket deleted");
+    }
+
     private User currentUser(HttpServletRequest request) {
         return currentUserProvider.from(request).orElseThrow();
+    }
+
+    private TicketResponseDto toResponse(Ticket ticket) {
+        return new TicketResponseDto(
+                ticket.getId().toString(),
+                ticket.getTitle(),
+                ticket.getDescription(),
+                ticket.getSeverity().name(),
+                ticket.getStatus().name(),
+                ticket.getOwner().getId().toString(),
+                ticket.getOwner().getEmail(),
+                ticket.getCreatedAt().toString(),
+                ticket.getUpdatedAt().toString()
+        );
     }
 }
