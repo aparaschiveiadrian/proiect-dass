@@ -2,18 +2,24 @@ package unibuc.adrianaparaschivei.backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import unibuc.adrianaparaschivei.backend.dto.AuthResultDto;
 import unibuc.adrianaparaschivei.backend.dto.LoginRequestDto;
 import unibuc.adrianaparaschivei.backend.dto.PasswordResetConfirmDto;
+import unibuc.adrianaparaschivei.backend.dto.PasswordResetLinkResponseDto;
+import unibuc.adrianaparaschivei.backend.dto.PasswordResetRequestDto;
 import unibuc.adrianaparaschivei.backend.dto.UserRegisterRequestDto;
 import unibuc.adrianaparaschivei.backend.service.AuthService;
 import unibuc.adrianaparaschivei.backend.service.PasswordResetService;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -44,6 +50,12 @@ public class AuthController {
         return "register";
     }
 
+    @ResponseBody
+    @PostMapping("/api/register")
+    public AuthResultDto apiRegister(@RequestBody UserRegisterRequestDto registerRequest, HttpServletRequest request) {
+        return authService.register(registerRequest, request);
+    }
+
     @GetMapping("/login")
     public String loginForm(@RequestParam(required = false) String error, Model model) {
         if (error != null) {
@@ -63,10 +75,23 @@ public class AuthController {
         return "login";
     }
 
+    @ResponseBody
+    @PostMapping("/api/login")
+    public AuthResultDto apiLogin(@RequestBody LoginRequestDto loginRequest, HttpServletRequest request, HttpServletResponse response) {
+        return authService.login(loginRequest, request, response);
+    }
+
     @PostMapping("/logout")
     public String logout(HttpServletRequest request, HttpServletResponse response) {
         authService.logout(request, response);
         return "redirect:/login?error=Logged out";
+    }
+
+    @ResponseBody
+    @PostMapping("/api/logout")
+    public AuthResultDto apiLogout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
+        return AuthResultDto.success("Logged out");
     }
 
     @GetMapping("/forgot-password")
@@ -80,6 +105,17 @@ public class AuthController {
         resetLink.ifPresent(link -> model.addAttribute("resetLink", link));
         model.addAttribute("message", "If the account exists, a reset link was generated. For the local demo it is displayed here.");
         return "forgot-password";
+    }
+
+    @ResponseBody
+    @PostMapping("/api/forgot-password")
+    public PasswordResetLinkResponseDto apiForgotPassword(@RequestBody PasswordResetRequestDto resetRequest, HttpServletRequest request) {
+        Optional<String> resetLink = passwordResetService.createResetLink(resetRequest.email(), request);
+        return new PasswordResetLinkResponseDto(
+                resetRequest.email(),
+                "If the account exists, a reset link was generated. For the local demo it is displayed here.",
+                resetLink.orElse(null)
+        );
     }
 
     @GetMapping("/reset-password")
@@ -97,5 +133,21 @@ public class AuthController {
         model.addAttribute("email", resetConfirm.email());
         model.addAttribute("token", resetConfirm.token());
         return "reset-password";
+    }
+
+    @ResponseBody
+    @PostMapping("/api/reset-password")
+    public AuthResultDto apiResetPassword(@RequestBody PasswordResetConfirmDto resetConfirm, HttpServletRequest request) {
+        return passwordResetService.resetPassword(resetConfirm, request);
+    }
+
+    @ResponseBody
+    @GetMapping("/api/csrf")
+    public Map<String, String> csrf(CsrfToken csrfToken) {
+        return Map.of(
+                "headerName", csrfToken.getHeaderName(),
+                "parameterName", csrfToken.getParameterName(),
+                "token", csrfToken.getToken()
+        );
     }
 }

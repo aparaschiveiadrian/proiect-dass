@@ -24,6 +24,12 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         boolean hasValidAuthToken = currentUserProvider.from(request).isPresent();
         if (!hasValidAuthToken) {
+            if (requestedPath.startsWith("/api")) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"success\":false,\"message\":\"Please login first\"}");
+                return false;
+            }
             response.sendRedirect("/login?error=Please login first");
             return false;
         }
@@ -32,9 +38,15 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean isPublicPage(String requestedPath) {
-        return !requestedPath.startsWith("/dashboard")
-                && !requestedPath.startsWith("/tickets")
-                && !requestedPath.startsWith("/audit")
-                && !requestedPath.startsWith("/logout");
+        return requestedPath.equals("/")
+                || requestedPath.startsWith("/register")
+                || requestedPath.startsWith("/login")
+                || requestedPath.startsWith("/forgot-password")
+                || requestedPath.startsWith("/reset-password")
+                || requestedPath.equals("/api/register")
+                || requestedPath.equals("/api/login")
+                || requestedPath.equals("/api/forgot-password")
+                || requestedPath.equals("/api/reset-password")
+                || requestedPath.equals("/api/csrf");
     }
 }
